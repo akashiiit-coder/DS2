@@ -13,9 +13,8 @@ typedef struct node{
 }node;
 node* root=NULL;
 int key=1;
-int r[2];
 int h_max=0;
-int height(node* root)// find the height of the tree
+int height(node* root)// find the height of the tree  ......checked OK!
 {
     if (!root)
     return 0;
@@ -24,26 +23,22 @@ int height(node* root)// find the height of the tree
     h_max=max(hl,hr);
     return (1+h_max);
 }
-node* t1=NULL,*t2=NULL;
-node* unbalanced(node* root)// return unbalanced node's address else null
+node* ub_n=NULL,*ub_n_p=NULL;
+void unbalanced(node* root)//if node is unbalanced unbalanced_node will get its value
+// not returning the nearest unbalanced node instead returning the first unbanced node
 {
-    if (!root) return NULL;
+    if (!root) return ;
+    unbalanced(root->lchild);
+    unbalanced(root->rchild);
     int hl=height(root->lchild);
     int hr=height(root->rchild);
-    if (hl-hr>=2)
-    return root;
-    if (hl-hr<=-2)
-    return root;
-    t1=unbalanced(root->lchild);
-    t2=unbalanced(root->rchild);
-    if (t1==NULL && t2==NULL)
-    return NULL;
-    else if (t1==NULL)
-    return t2;
-    else 
-    return t1;
+    if ( !ub_n && (hl-hr>=2 || hl-hr<=-2) )
+    ub_n=root;
+    if (!ub_n_p && ((root->rchild && root->rchild==ub_n) || (root->lchild && root->lchild==ub_n) ))
+    ub_n_p=root;
+
 }
-node* insert(node* t,int key)// inserts key inside the trey by recursion
+node* insert(node* t,int key)// inserts key inside the tree by recursion
 {
     if (!t)
     {
@@ -58,10 +53,10 @@ node* insert(node* t,int key)// inserts key inside the trey by recursion
     t->rchild=insert(t->rchild,key);
     return t;
 }
-//type of rotaion of the tree 
-int rotation(int key)//assuming left = 1 right = 2
+//type of rotaion of the tree checks from unbalanced node to newly inserteed node
+int rotation(node* temp,int key)//assuming left = 1 right = 2
 {
-    node* temp=root;
+    int r[2];
     for (int i=0;i<2;i++)
     {
         if (temp->data<key)
@@ -80,15 +75,23 @@ int rotation(int key)//assuming left = 1 right = 2
     return 10*r[0]+r[1];
 }
 //this function actually performs the rotations
-void balance(node* root,int rv)// i hve created this only for this case
+void balance(node* ubn,node* ubn_parent,int rv)// i hve created this only for this case
 {
     if (rv==22)//RR rotation
     {
-        node* b=root->rchild;
+        node* b=ubn->rchild;
         node* c=b->rchild;
-        root->rchild=b->lchild;
-        b->rchild=c;
-        b->lchild=root;
+        ubn->rchild=b->lchild;
+        b->lchild=ubn;
+        if (!ubn_parent)//root is unbalanced
+        root=b;
+        else
+        {
+            if (ubn_parent->data>b->data)// if unbalanced node is left child of it's parent
+            ubn_parent->lchild=b;
+            else 
+            ubn_parent->rchild=b;
+        }
     }
 }
 //this creates the A.V.L tree recursively 
@@ -97,13 +100,30 @@ void avl_create()
     if (key==7)
     return;
     root=insert(root,key);
-    node* ub_n=unbalanced(root);
+    ub_n=NULL;
+    ub_n_p=NULL;
+    unbalanced(root);
     if (ub_n!=NULL)
-    balance(ub_n,rotation(key));
+    {
+        if (ub_n_p!=NULL)
+        printf ("Parent of ubn is %d",ub_n_p->data);
+        printf("data of unb node= %d, when element inserted = %d\n",ub_n->data, key);
+        balance(ub_n,ub_n_p,rotation(ub_n,key));
+    }
     key++;
     avl_create();
+}
+void display(node* root, int level)
+{
+    if (!root)return;
+    display(root->rchild,level+1);
+    for (int i=0;i<level;i++)
+    printf ("   ");
+    printf ("%d\n",root->data);
+    display(root->lchild,level+1);
 }
 int main(void)
 {
     avl_create();
+    display(root,0);
 }
